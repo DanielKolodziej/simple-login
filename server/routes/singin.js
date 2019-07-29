@@ -159,7 +159,9 @@ loginRoutes.route('/signin').post((req, res)=> {
                 return res.send({
                     success: true,
                     message: 'Valid Sign in',
-                    token: doc._id
+                    token: doc._id,
+                    //user id to check user properties 
+                    userId: userSession.userId
                 });
             })
         })
@@ -221,7 +223,7 @@ loginRoutes.route('/verify').get((req, res)=>{
         // DO ACTION
         return res.send({
             success: true,
-            message: 'Good'
+            message: 'token is verified'
         });
         }
   });

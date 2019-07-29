@@ -33,13 +33,21 @@ const Home = () => {
   }
 
   useEffect(()=>{
+    console.log('state of global UserContext from Home Component',status);
+  },[status])
+
+  useEffect(()=>{
+    const abortController = new AbortController();
+    const signal = abortController.signal;
+
     //Change the_main_app to be your websites name. 
     //It just has to be unique. Make sure you change all instances of it.
     const obj = getFromStorage('the_main_app');
     if (obj && obj.token) {
       const { token } = obj;
-
-      axios.get('http://localhost:4000/account/verify?token=' + token)
+      console.log('1111111111111111111111111111111');
+      console.log('obj in home component',obj);
+      axios.get('http://localhost:4000/account/verify?token=' + token, {signal: signal})
       .then(res => {
         console.log(res.data)
         if (res.data.success) {
@@ -54,22 +62,11 @@ const Home = () => {
           }
         })
 
-      // Verify token fetch
-      // fetch('/account/verify?token=' + token)
-      //   .then(res => res.json())
-      //   .then(json => {
-      //     if (json.success) {
-      //       setUser({
-      //         token,
-      //         isLoading: false
-      //       });
-      //     } else {
-      //       setUser({
-      //         isLoading: false,
-      //       });
-      //     }
-      //   }); 
-        //end of fetch
+        return function cleanup(){
+          console.log('home useEffect clean up...');
+          abortController.abort();//cancel subscription by abort
+      }
+      
     } else {
       setUser({
         isLoading: false
@@ -115,9 +112,14 @@ const Home = () => {
     };
     axios.post('http://localhost:4000/account/signin', response)
         .then(res => {
-          console.log(res.data);
+          console.log('onSignin res.data:',res.data);
           if (res.data.success){
-                setInStorage('the_main_app', { token: res.data.token});
+                setInStorage('the_main_app', { 
+                  token: res.data.token,
+                  //store name and status state in localstorage test?
+                  // name: user.signInEmail,
+                  // status: status
+                });
                 setUser({
                   signInError: res.data.message,
                   isLoading: false,
@@ -129,8 +131,16 @@ const Home = () => {
                 setStatus(status => ({
                   ...status,
                   name: user.signInEmail,
-                  loggedIn: true
+                  loggedIn: true,
+                  userId: res.data.userId
                 }))
+                console.log('Status state home:', status)
+                // setInStorage('the_main_app', { 
+                //   token: res.data.token,
+                //   //store name and status state in localstorage test?
+                //   name: user.signInEmail,
+                //   info: status
+                // });
                 //---------------------------
               } else {
                 setUser({
