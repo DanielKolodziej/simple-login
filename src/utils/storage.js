@@ -5,6 +5,10 @@
 // If they don’t have a token, we load our sign in and sign up form. 
 // When they sign in with valid credentials, we save a new token.
 
+
+//SWITCHTED TO COOKIES FOR HANDLING PRIVATE DATA(token + user id)
+//KEEPING THIS LOCALSTORAGE AS REFERENCE/LATER USE
+
 export function getFromStorage(key) {
     if (!key) {
       return null;

@@ -1,12 +1,17 @@
 import React, { useState, useEffect, useContext } from 'react';
 import axios from 'axios';
-import {
-  setInStorage,
-  getFromStorage,
-} from '../utils/storage';
 
 // import { UserProvider } from './UserContext';
 import { UserContext } from './UserContext';
+
+import { useCookies } from 'react-cookie';
+
+//css styles
+const formStyle = {
+  marginTop: '5%',
+  marginLeft: '5%',
+  marginRight: '5%'
+}
 
 const Home = () => {
   const initialState = {
@@ -26,6 +31,10 @@ const Home = () => {
   const [status, setStatus] = useContext(UserContext);
   //----------------------------------------------------------
 
+  //cookies---------------------------
+  const [cookies, setCookie, removeCookie] = useCookies(['user-cookies']);
+  //---------------------------
+
   const handleInputChange = (e) => {
     const { name, value } = e.target;
 
@@ -37,22 +46,24 @@ const Home = () => {
   },[status])
 
   useEffect(()=>{
+    console.log('state of cookies from Home Component',cookies);
+    console.log(cookies.status);
+  },[cookies])
+
+  useEffect(()=>{
     const abortController = new AbortController();
     const signal = abortController.signal;
 
-    //Change the_main_app to be your websites name. 
-    //It just has to be unique. Make sure you change all instances of it.
-    const obj = getFromStorage('the_main_app');
-    if (obj && obj.token) {
-      const { token } = obj;
-      console.log('1111111111111111111111111111111');
-      console.log('obj in home component',obj);
-      axios.get('http://localhost:4000/account/verify?token=' + token, {signal: signal})
+
+    if (cookies.status) {
+
+      console.log('cookies from home component',cookies);
+      axios.get('http://localhost:4000/account/verify?token=' + cookies.status, {signal: signal})
       .then(res => {
         console.log(res.data)
         if (res.data.success) {
             setUser({
-              token,
+              token: cookies.status,
               isLoading: false
             });
           } else {
@@ -72,7 +83,7 @@ const Home = () => {
         isLoading: false
       })
     }
-  },[])
+  },[cookies])
 
   const onSignUp = () => {
     setUser({
@@ -114,12 +125,6 @@ const Home = () => {
         .then(res => {
           console.log('onSignin res.data:',res.data);
           if (res.data.success){
-                setInStorage('the_main_app', { 
-                  token: res.data.token,
-                  //store name and status state in localstorage test?
-                  // name: user.signInEmail,
-                  // status: status
-                });
                 setUser({
                   signInError: res.data.message,
                   isLoading: false,
@@ -134,14 +139,10 @@ const Home = () => {
                   loggedIn: true,
                   userId: res.data.userId
                 }))
-                console.log('Status state home:', status)
-                // setInStorage('the_main_app', { 
-                //   token: res.data.token,
-                //   //store name and status state in localstorage test?
-                //   name: user.signInEmail,
-                //   info: status
-                // });
-                //---------------------------
+                //set cookie
+                setCookie('status', res.data.token, { 
+                  path: '/',
+                  maxAge: 3600})
               } else {
                 setUser({
                   signInError: res.data.message,
@@ -151,20 +152,17 @@ const Home = () => {
         })
   }
 
-  //clears the token from local storage and tells the backend to “delete” the user session
+  //clears the token from cookie and tells the backend to “delete” the user session
   const logout = () =>{
     setUser({
       isLoading: true,
     });
-    const obj = getFromStorage('the_main_app');
-    if (obj && obj.token) {
-      const { token } = obj;
 
-      axios.get('http://localhost:4000/account/logout?token=' + token)
+    if (cookies.status) {
+      axios.get('http://localhost:4000/account/logout?token=' + cookies.status)
       .then(res => {
         console.log(res.data)
         if (res.data.success) {
-          localStorage.removeItem('the_main_app');
           setUser({
             token: '',
             isLoading: false
@@ -173,9 +171,12 @@ const Home = () => {
           setStatus(status => ({
             ...status,
             name: '',
-            loggedIn: false
+            loggedIn: false,
+            userId: ''
           }))
           //----------------------------------
+          removeCookie('status');
+          //--------------------------------
         } else {
           setUser({
             isLoading: false,
@@ -196,6 +197,8 @@ const Home = () => {
       </div>
     )
   } 
+
+  //if user token does not exist....show log in
   if (!user.token){
     return (
       <div>
@@ -205,49 +208,56 @@ const Home = () => {
                 <p>{user.signInError}</p>
               ) : (null)
             }
-            <p>Sign In</p>
-            <input
-              type="email"
-              name="signInEmail"
-              placeholder="Email"
-              // value={user.signInEmail}
-              onChange={handleInputChange}
-            />
-            <br />
-            <input
-              type="password"
-              name="signInPassword"
-              placeholder="Password"
-              // value={user.signInPassword}
-              onChange={handleInputChange}
-            />
-            <br />
-            <button onClick={onSignIn}>Sign In</button>
+      
+            <form className="ui form" style={formStyle}>
+            <h3>Sign In</h3>
+              <div className="field">
+                <input
+                  type="email"
+                  name="signInEmail"
+                  placeholder="Email"
+                  onChange={handleInputChange}
+                />
+              </div>
+              <div className="field">
+                <input
+                  type="password"
+                  name="signInPassword"
+                  placeholder="Password"
+                  onChange={handleInputChange}
+                />
+              </div>
+              <button onClick={onSignIn} className="ui primary button">Sign In</button>
+            </form>
           </div>
-          <br />
-          <br />
+
           <div>
             {
               (user.signUpError) ? (
                 <p>{user.signUpError}</p>
               ) : (null)
             }
-            <p>Sign Up</p>
-            <input
-              type="email"
-              name="signUpEmail"
-              placeholder="Email"
-              // value={user.signUpEmail}
-              onChange={handleInputChange}
-            /><br />
-            <input
-              type="password"
-              name="signUpPassword"
-              placeholder="Password"
-              // value={user.signUpPassword}
-              onChange={handleInputChange}
-            /><br />
-            <button onClick={onSignUp}>Sign Up</button>
+
+            <form className="ui form" style={formStyle}>
+            <h3>Sign Up</h3>
+              <div className="field">
+                <input
+                  type="email"
+                  name="signUpEmail"
+                  placeholder="Email"
+                  onChange={handleInputChange}
+                />
+              </div>
+              <div className="field">
+                <input
+                  type="password"
+                  name="signUpPassword"
+                  placeholder="Password"
+                  onChange={handleInputChange}
+                />
+              </div>
+              <button onClick={onSignUp} className="ui primary button">Sign Up</button>
+            </form>
           </div>
       </div>
     )

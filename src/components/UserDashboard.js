@@ -2,11 +2,13 @@ import React, { useState, useContext, useEffect } from 'react';
 import { UserContext } from './UserContext';
 import axios from 'axios';
 import { Link } from 'react-router-dom'
+import { useCookies } from 'react-cookie';
 
-// const Admin = () => {
 const UserDashboard = () => {
-  const [status, setStatus] = useContext(UserContext);
+  const [status] = useContext(UserContext);
   const [user, setUser] = useState({admin: false, count: 0});
+
+  const [cookies] = useCookies(['user-cookies'])
 
   useEffect(()=> {
       const abortController = new AbortController();
@@ -28,9 +30,9 @@ const UserDashboard = () => {
             console.log('userDashboard useEffect clean up...');
             abortController.abort();//cancel subscription by abort
         }
-    }, []);
+    }, [status.userId]);
 
-  if (status.loggedIn && user.admin){
+  if (cookies.status && user.admin){
     return (
       <div>
         <p>Logged in Only Page...</p>
@@ -39,7 +41,7 @@ const UserDashboard = () => {
         <Link to="/admin"><button>Admin only page</button></Link>
       </div>
     )
-  } else if (status.loggedIn && !user.admin){
+  } else if (cookies.status && !user.admin){
     return (
       <div>
         <p>Logged in Only Page...</p>
@@ -55,5 +57,4 @@ const UserDashboard = () => {
   )
 };
 
-// export default Admin;
 export default UserDashboard;
